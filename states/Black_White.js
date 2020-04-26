@@ -1,1 +1,0 @@
-class Black_White {
