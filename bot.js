@@ -26,11 +26,13 @@ bot.on('message', function (user, userID, channelID, message, evt) {
        
         args = args.splice(1);
 		state = state.execute(cmd, bot, user, userID, channelID, message, evt)
-		state = admin_commands(state, cmd, bot, user, userID, channelID, message, evt)
+		state = admin_commands(state, args, cmd, bot, user, userID, channelID, message, evt)
      }
 });
 
-admin_commands = function(state, cmd, bot, user, userID, channelID, message, evt) {
+fuck_you_list = ['Papayia!', 'Ginger']
+
+admin_commands = function(state, args, cmd, bot, user, userID, channelID, message, evt) {
 	if (user == auth.admin) {
 		switch(cmd) {
 		// !ping
@@ -48,7 +50,11 @@ admin_commands = function(state, cmd, bot, user, userID, channelID, message, evt
 				});
 				return state;
 				break;
-
+			case 'pyr':
+				deck = new Deck(1);
+				players = state.players[user] = []
+				return new Pyramid(new Deck(1), players, bot, channelID);
+				break;
 			case 'init':
 				return new Init_state();
 				break;
@@ -57,14 +63,21 @@ admin_commands = function(state, cmd, bot, user, userID, channelID, message, evt
 				break;
 		
 			case 'h_l':
-				return new High_Low;
+				return new High_Low();
+				break;
+			case 'bus':
+				deck = new Deck(1);
+				players = {'tatatos': [deck.draw(), deck.draw(), deck.draw(), deck.draw()], 'fail': [deck.draw(),  deck.draw()]};
+				
+				return new Bus(players, bot, channelID);
 				break;
 		}
 	}
-	if (user == 'Papayia!') {
+	index = fuck_you_list.indexOf(user);
+	if (index != -1) {
 		bot.sendMessage({
 			to: channelID,
-			message: 'Fuck you Papayia'
+			message: 'Fuck you ' + user + '!'
 		});
 	}
 return state;
@@ -433,6 +446,8 @@ function Suit(deck, players, order_list, bot, channelID) {
 		+ '\n' + ' Cards: [' + this.players[player][0].get_suit() + ' ' + this.players[player][1].get_suit() + ' ' + this.players[player][2].get_suit() +']' 
 		}
 	}
+	
+	
 	this.update_player = function(channelID) {
 		if (this.order_list.length > this.index) {
 			this.player = this.order_list[this.index];
@@ -442,9 +457,13 @@ function Suit(deck, players, order_list, bot, channelID) {
 		} else {
 			bot.sendMessage({
 				to: channelID,
-				message: 'State = Suit. DAME PREPEI NA MPEI return NEW_STATE'
+				message: 'Pyramid Bitcheees' + '\n'
+						+ '▢ ▢ ▢ ▢ x2 shots' + '\n'
+						+ '   ▢ ▢ ▢   x4 shots' + '\n'
+						+ '     ▢ ▢     x6 shots' + '\n'
+						+ '        ▢        x8 shots'
 			});
-			return this;
+			return new Pyramid(this.deck, this.players, bot, channelID);
 		}
 	}
 	console.log(order_list)
@@ -521,6 +540,290 @@ function Suit(deck, players, order_list, bot, channelID) {
 			}
 		} 
 		return state;
+	}
+}
+
+function Pyramid(deck, players, bot, channelID) {
+		console.log("Creating Pyramid");
+
+	this.deck = deck;
+	this.players = players;
+	this.pyramid_list = ["▢", "▢", "▢", "▢", "▢", "▢", "▢", "▢", "▢", "▢"];
+	this.pyramid_index = 0;
+	this.current_card_owners = [];
+	console.log()
+	for (const key of Object.keys(players)) {
+		var player = key;
+		console.log(this.players[player][0].get_number() + ' ' + this.players[player][1].get_number() + ' ' 
+					+ this.players[player][2].get_number() + ' ' + this.players[player][3].get_number());
+		bot.sendMessage({
+		to: channelID,
+		message: player + ' has: ' + this.players[player][0].get_number() + ' ' + this.players[player][0].get_suit() + ', '
+								+ this.players[player][1].get_number() + ' ' + this.players[player][1].get_suit() + ', '
+								+ this.players[player][2].get_number() + ' ' + this.players[player][2].get_suit() + ', '
+								+ this.players[player][3].get_number() + ' ' + this.players[player][3].get_suit() + '\n'
+	});
+	
+	}
+	
+	this.update_pyramid = function(channelID) {
+		for (var i = 0; i < 10; i++) {
+			if (i == this.pyramid_index) {
+				this.card = this.deck.draw();
+				this.pyramid_list[i] = this.card.get_number() + this.card.get_suit();
+				this.pyramid_index += 1;
+				break;
+			}
+		}
+		bot.sendMessage({
+			to: channelID,
+			message: this.pyramid_list[0] + ' ' + this.pyramid_list[1] + ' ' + this.pyramid_list[2] + ' ' + this.pyramid_list[3] + ' x2 shots' + '\n'
+					+ '   ' + this.pyramid_list[4] + ' ' + this.pyramid_list[5] + ' ' + this.pyramid_list[6] + '   x4 shots' + '\n'
+					+ '     ' + this.pyramid_list[7] + ' ' + this.pyramid_list[8] + '    x6 shots' + '\n'
+					+ '        ' + this.pyramid_list[9] + '        x8 shots'
+		});
+		return this.card;
+	}
+	
+	this.has_the_card = function(channelID, card) {
+		for (const key of Object.keys(this.players)) {
+			if (this.pyramid_index < 10) {
+				console.log(current_card.get_number());
+				if ((current_card.get_number() == this.players[key][0].get_number()) 
+					|| (current_card.get_number() == this.players[key][1].get_number()) 
+					|| (current_card.get_number() == this.players[key][2].get_number()) 
+					|| (current_card.get_number() == this.players[key][3].get_number())) {
+					this.current_card_owners.push(key);
+					console.log('Found ' + key);
+				}
+			}
+		}
+		owners_string = '';
+		if (this.current_card_owners.length != 0) {
+			for (var i=0; i < this.current_card_owners.length; i++) {
+				if (i == this.current_card_owners.length - 1) {
+					owners_string += ' and ' + this.current_card_owners[i];
+				} if (i == 0) {
+					owners_string = this.current_card_owners[i];
+				} else {
+					owners_string += ', ' + this.current_card_owners[i];
+				}
+				
+			}
+		}
+		console.log('Owners: ' + owners_string);
+		if (owners_string != '') {
+			bot.sendMessage({
+				to: channelID,
+				message: owners_string + ' spread your shots!'
+			});
+		} else {
+			bot.sendMessage({
+				to: channelID,
+				message: 'Nobody drinks!'
+			});
+		}
+		return owners_string;
+	}
+	/*
+	current_card = this.update_pyramid(channelID);
+	owners = this.has_the_card(channelID, current_card);
+	*/
+	var owners = '';
+	while ((owners == '') && (this.pyramid_index < 10)) {
+		current_card = this.update_pyramid(channelID);
+		owners = this.has_the_card(channelID, current_card);
+	}
+	console.log(this.pyramid_list[0] + ' ' + this.pyramid_list[1] + ' ' + this.pyramid_list[2] + ' ' + this.pyramid_list[3] + ' ' + this.pyramid_list[4] + ' '
+		+ this.pyramid_list[5] + ' ' + this.pyramid_list[6] + ' ' + this.pyramid_list[7] + ' ' + this.pyramid_list[8] + ' ' + this.pyramid_list[9]);
+	
+	this.execute = function(cmd, bot, user, userID, channelID, message, evt) {
+		console.log(this.current_card_owners + user);
+		var index = this.current_card_owners.indexOf(user);
+		if (index > -1) {
+			this.current_card_owners.splice(index, 1);
+			console.log(this.current_card_owners);
+		}
+		if (this.current_card_owners.length == 0) {
+			owners = '';
+			while ((owners == '') && (this.pyramid_index < 10)) {
+				current_card = this.update_pyramid(channelID);
+				var check = false;
+				for (var i=0; i < this.pyramid_index; i++) {
+					if ((current_card.get_number()) == this.pyramid_list[i].charAt(0)) {
+						check = true;
+					}
+				}
+				if (check == false) {
+					owners = this.has_the_card(channelID, current_card);
+				}
+				
+				console.log(this.pyramid_list[0] + ' ' + this.pyramid_list[1] + ' ' + this.pyramid_list[2] + ' ' + this.pyramid_list[3] + ' ' + this.pyramid_list[4] + ' '
+		+ this.pyramid_list[5] + ' ' + this.pyramid_list[6] + ' ' + this.pyramid_list[7] + ' ' + this.pyramid_list[8] + ' ' + this.pyramid_list[9]);
+			}
+			if (this.pyramid_index == 10) {
+				return new Bus(this.players, bot, channelID);
+			}
+		}
+		return this;
+	}
+}
+
+
+cards_sum = function(cards) {
+	sum = 0;
+	for (var card of cards) {
+		sum += card.get_real_value();
+	}
+	return sum;
+}
+ make_bus_text = function(bus, index, reveal) {
+	 res = 'Up (+U) or Down (+D)' + '\n';
+	 bus_text = '';
+	 index_text = '';
+	for (var i = 0; i < bus.length; i++) {
+		if (reveal[i]) {
+			bus_text += bus[i].get_number() + '' + bus[i].get_suit() + ' ';
+		} else {
+			bus_text += '▢ ';
+		}
+		if (index < 6) {
+			if (index == i) {
+				index_text += '↑';
+			} else {
+				index_text += '       ';
+			}
+		}
+	}
+	res += bus_text + '\n' + index_text;
+	return res;
+ }
+ 
+ cards2string = function(cards) {
+	res = '';
+	for (var card of cards) {
+		res += card.get_number() + card.get_suit();
+	}
+	return res;
+ }
+ 
+function Bus(players, bot, channelID) {
+	message = '';
+	max = 0;
+	
+	for (const key of Object.keys(players)) {
+		if (cards_sum(players[key]) > max) {
+			max = cards_sum(players[key]);
+			this.player = key;
+		}
+		message += key + ": " + cards_sum(players[key]) + '\n';
+	}
+	message += 'LOSER: ' + this.player + ' with: ' + cards2string(players[this.player]) + ' = ' + max + ' points.' 
+			+ '\n' + 'Έλα στο κόκκινο λεωφορείο!';
+	bot.sendMessage({
+		to: channelID,
+		message: message
+	});
+	
+	
+	this.deck = new Deck(1);
+	this.bus = [this.deck.draw(), this.deck.draw(), this.deck.draw(), this.deck.draw(), this.deck.draw()];
+	this.index = 0;
+	this.reveal = [false, false, false, false, false];
+	
+	this.update_message = function(channelID, bus, index, reveal) {
+		return {
+			to: channelID,
+			message: make_bus_text(bus, index, reveal)
+		}
+	}
+	this.success_message = function(channelID, card) {
+		return {
+			to: channelID,
+			message: 'Congratulations! You drew: ' + card.get_number() + '' + card.get_suit()  + '\n'
+			+ 'You advance to the next level'
+		}
+	}
+	this.fail_message = function(channelID, card, shots) {
+		return {
+			to: channelID,
+			message: 'Haha! You drew: ' + card.get_number() + '' + card.get_suit()  + '\n'
+			+ 'Go back to the beggining. Να κάτσεις πάνω! Πίνε ' + shots + ' shots'
+		}
+	}
+	this.equal_message = function(channelID, card) {
+		return {
+			to: channelID,
+			message: 'Τράβησες: ' + card.get_number() + '' + card.get_suit()  + '\n' +'Μένεις στάσιμος. Χοχο'
+		}
+	}
+	bot.sendMessage(this.update_message(channelID, this.bus, this.index, this.reveal));
+	
+	this.execute = function(cmd, bot, user, userID, channelID, message, evt) {
+		if (user == this.player) {
+			if (!this.reveal[this.index]) {
+				this.reveal[this.index] = true;
+				bot.sendMessage({
+					to: channelID,
+					message: 'The card underneath was: ' + this.bus[this.index].get_number() + '' + this.bus[this.index].get_suit()
+				});
+			}
+			switch (cmd) {
+				case 'U':
+					card = this.deck.draw();
+					ind = this.index;
+					
+					if (card.get_real_value() > this.bus[this.index].get_real_value()) {
+						this.index += 1;
+						bot.sendMessage(this.success_message(channelID, card));
+					} else {
+						if (card.get_real_value() < this.bus[this.index].get_real_value()) {
+						this.index = 0;
+						bot.sendMessage(this.fail_message(channelID, card, ind+1));
+						} else {
+						bot.sendMessage(this.equal_message(channelID, card));
+						}
+					}
+					this.bus[ind] = card;
+
+				break;
+				case 'D':
+					card = this.deck.draw();
+					ind = this.index;
+
+					if (card.get_real_value() < this.bus[this.index].get_real_value()) {
+						this.index += 1;
+						bot.sendMessage(this.success_message(channelID, card));
+					} else {
+						if (card.get_real_value() > this.bus[this.index].get_real_value()) {
+							this.index = 0;
+							bot.sendMessage(this.fail_message(channelID, card, ind+1));
+						} else {
+							bot.sendMessage(this.equal_message(channelID, card));
+						}
+					}
+					this.bus[ind] = card;
+
+				break;
+				default:
+					bot.sendMessage({
+						to: channelID,
+						message: 'Έκαμες τα πούττους!'
+					});
+				break;
+			}
+			bot.sendMessage(this.update_message(channelID, this.bus, this.index, this.reveal));
+			console.log(this.index);
+			if (this.index == 5) {
+				bot.sendMessage({
+					to: channelID,
+					message: 'Congratulations! You made it out the bus. You sly dog'
+				});
+				return new Init_state();
+			} else {
+				return this;
+			}
+		}
 	}
 }
 
